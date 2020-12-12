@@ -65,7 +65,7 @@
             inherit system;
             modules = [
               globalConfig
-              (./hosts + "/${hostName}.nix")
+              (./hosts + "/${hostName}/default.nix")
               ./profiles/core
               inputs.home.nixosModules.home-manager
             ] ++ extraModules;
