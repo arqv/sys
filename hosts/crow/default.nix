@@ -54,7 +54,7 @@ with lib;
     };
   };
   swapDevices = [{
-    device = "/dev/disk/by-uuid/0cb371bf-d2b9-4c55-8362-ab6ff78e1b6a";
+    device = "/dev/sda2";
   }];
 
   networking.networkmanager.enable = true;
