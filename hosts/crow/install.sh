@@ -1,12 +1,21 @@
 #!/bin/sh
-# XXX: This script will wipe the entire drive. Be careful.
-# Run as root and in the base directory of the Git repository
-# > hosts/crow/install.sh /dev/sda
 
-DISK=${1:/dev/sda}
+# XXX: This script will zero out the entire drive (unless the NO_WIPE
+#      variable is set), and regenerate the filesystems of the drive.
 
-echo ":: wiping drive '$DISK'"
-dd if=/dev/urandom of=$DISK status=progress
+# The script will default to the '/dev/sda' drive unless it's passed
+# an argument, and it assumes that the current working directory is the
+# repository root.
+# Run as root.
+
+DISK=${1:-/dev/sda}
+USERS=$(nix eval -f ../../profiles/core/users/get_users.nix --raw)
+
+if [[ ! "$NO_WIPE" =~ ^[yY]$ ]]; then
+	echo ":: wiping drive '$DISK'"
+	dd if=/dev/urandom of=$DISK status=progress
+fi
+
 echo ":: partitioning disk"
 sfdisk $DISK <<EOF
 label: dos
@@ -33,7 +42,9 @@ zfs create -o mountpoint=legacy tank/ephemeral/root
 zfs snapshot tank/ephemeral/root@blank
 echo "   -> ephemeral/home"
 zfs create -o mountpoint=legacy tank/ephemeral/home
-zfs snapshot tank/ephemeral/home@blank
+for user in $USERS; do
+	mkdir "/mnt/${user}"
+done
 echo "   -> nix"
 zfs create -o mountpoint=legacy tank/nix
 echo "   -> persist"
@@ -57,5 +68,10 @@ mount "${DISK}1" /mnt/boot
 echo "   -> swap partition"
 swapon "${DISK}2"
 echo ":: installing NixOS"
-nixos-install --flake ".#crow" --no-root-passwd
+nixos-install --flake ".#crow" --no-root-passwd --impure
+echo ":: fixing user partition permissions"
+for user in $USERS; do
+	nixos-enter --root /mnt -c "chown -R ${user}:users /home/${user}"
+done
+zfs snapshot tank/ephemeral/home@blank
 echo ":: done"

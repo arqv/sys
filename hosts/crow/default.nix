@@ -3,7 +3,7 @@ with lib;
 
 {
   imports = [
-    ../profiles/graphical
+    ../../profiles/graphical
   ];
 
   boot = {
@@ -33,7 +33,7 @@ with lib;
   fileSystems = {
     "/boot" = {
       device = "/dev/sda1";
-      fsType = "ext2";
+      fsType = "ext4";
     };
     "/" = {
       device = "tank/ephemeral/root";
